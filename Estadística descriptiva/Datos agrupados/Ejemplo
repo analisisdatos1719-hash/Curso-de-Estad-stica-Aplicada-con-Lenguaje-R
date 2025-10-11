@@ -1,10 +1,10 @@
 
 # ============================================================
 # ESTADÍSTICA DESCRIPTIVA: DATOS AGRUPADOS
-# Ejemplo: Rendimiento de caña de azúcar (ton/ha)
+# Ejemplo: Rendimiento de caña de azúcar (t/ha)
 # ============================================================
 
-# 1. Datos (TCH)
+# Datos:
 rendimiento <- c(82, 88, 90, 91, 93, 95, 96, 97, 98, 99,
                  100, 101, 103, 104, 106, 107, 108, 109, 110, 112,
                  84, 86, 88, 92, 94, 95, 97, 98, 99, 101,
@@ -12,46 +12,33 @@ rendimiento <- c(82, 88, 90, 91, 93, 95, 96, 97, 98, 99,
                  83, 87, 89, 90, 92, 94, 96, 97, 98, 100)
 
 # ------------------------------------------------------------
-# 2. Calcular número de clases con la regla de Sturges
+# Parámetros básicos
 n <- length(rendimiento)
-k <- ceiling(1 + 3.322 * log10(n))  # número de clases
-k
-
-# ------------------------------------------------------------
-# 3. Calcular rango (R) y el intervalo de clase (IC)
+k <- ceiling(1 + 3.322 * log10(n))  # número de clases (Sturges)
 R <- max(rendimiento) - min(rendimiento)
-IC <- ceiling(R / k)
-R; IC
-
-# ------------------------------------------------------------
-# 4. Definición del intervalo de clase
-
+IC <- ceiling(R / k)                # amplitud de clase
 limites <- seq(from = min(rendimiento),
                to = max(rendimiento) + IC,
                by = IC)
 
+# ------------------------------------------------------------
+# Construcción de intervalos y frecuencias
 intervalos <- cut(rendimiento, breaks = limites, include.lowest = TRUE, right = FALSE)
+f_abs <- as.numeric(table(intervalos))
+f_acum <- cumsum(f_abs)
+f_rel <- round(f_abs / n, 3)
+f_acum_rel <- round(cumsum(f_rel), 3)
 
 # ------------------------------------------------------------
-# 5. Calcular frecuencias
-f_abs <- as.numeric(table(intervalos))              # Frecuencia absoluta
-f_acum <- cumsum(f_abs)                             # Frecuencia acumulada
-f_rel <- round(f_abs / n, 3)                        # Frecuencia relativa
-f_acum_rel <- round(cumsum(f_rel), 3)               # Frecuencia acumulada relativa
-
-# ------------------------------------------------------------
-# 6. Calcular marcas de clase (punto medio)
+# Marcas de clase y productos
 lim_inf <- limites[-length(limites)]
 lim_sup <- limites[-1]
 marca <- (lim_inf + lim_sup) / 2
-
-# ------------------------------------------------------------
-# 7. Productos x·f y x²·f
 xf <- round(marca * f_abs, 2)
 x2f <- round((marca^2) * f_abs, 2)
 
 # ------------------------------------------------------------
-# 8. Crear tabla final de distribución de frecuencias
+# Tabla de distribución de frecuencias
 tabla <- data.frame(
   Clase = 1:(length(f_abs)),
   Intervalo = paste(lim_inf, "-", lim_sup),
@@ -66,7 +53,50 @@ tabla <- data.frame(
   x2_por_f = x2f
 )
 
-# Mostrar tabla
-tabla
+print(tabla)
 View(tabla)
 
+# ------------------------------------------------------------
+# Cálculo de la media, varianza y desviación estándar agrupadas
+media_agrupada <- sum(xf) / n
+varianza_agrupada <- sum(f_abs * (marca - media_agrupada)^2) / (n - 1)
+desviacion_agrupada <- sqrt(varianza_agrupada)
+
+cat("\nMedia agrupada =", round(media_agrupada, 2))
+cat("\nVarianza agrupada =", round(varianza_agrupada, 2))
+cat("\nDesviación estándar agrupada =", round(desviacion_agrupada, 2), "\n")
+
+# ------------------------------------------------------------
+# HISTOGRAMA + FUNCIÓN DE DENSIDAD
+hist(rendimiento,
+     breaks = limites,
+     main = "Histograma y función de densidad del rendimiento de caña",
+     xlab = "Rendimiento (t/ha)",
+     ylab = "Frecuencia",
+     col = "skyblue",
+     border = "white",
+     freq = FALSE)
+lines(density(rendimiento), col = "red", lwd = 2)  # Curva de densidad
+rug(rendimiento)  # Pequeñas marcas en el eje X
+
+# ------------------------------------------------------------
+# POLÍGONO DE FRECUENCIAS
+plot(marca, f_abs,
+     type = "b",
+     pch = 19,
+     col = "blue",
+     main = "Polígono de frecuencias",
+     xlab = "Marca de clase (t/ha)",
+     ylab = "Frecuencia")
+lines(marca, f_abs, col = "blue", lwd = 2)
+
+# ------------------------------------------------------------
+# OJIVA DE GALTON (Frecuencia acumulada)
+plot(lim_sup, f_acum,
+     type = "b",
+     pch = 19,
+     col = "darkgreen",
+     main = "Ojiva de Galton (Frecuencia acumulada)",
+     xlab = "Límite superior de clase",
+     ylab = "Frecuencia acumulada")
+lines(lim_sup, f_acum, col = "darkgreen", lwd = 2)
