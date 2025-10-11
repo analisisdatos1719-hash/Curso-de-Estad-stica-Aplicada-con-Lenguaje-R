@@ -1,1 +1,72 @@
 
+# ============================================================
+# ESTADÍSTICA DESCRIPTIVA: DATOS AGRUPADOS
+# Ejemplo: Rendimiento de caña de azúcar (ton/ha)
+# ============================================================
+
+# 1. Datos (TCH)
+rendimiento <- c(82, 88, 90, 91, 93, 95, 96, 97, 98, 99,
+                 100, 101, 103, 104, 106, 107, 108, 109, 110, 112,
+                 84, 86, 88, 92, 94, 95, 97, 98, 99, 101,
+                 102, 104, 106, 107, 109, 110, 111, 112, 114, 115,
+                 83, 87, 89, 90, 92, 94, 96, 97, 98, 100)
+
+# ------------------------------------------------------------
+# 2. Calcular número de clases con la regla de Sturges
+n <- length(rendimiento)
+k <- ceiling(1 + 3.322 * log10(n))  # número de clases
+k
+
+# ------------------------------------------------------------
+# 3. Calcular rango (R) y el intervalo de clase (IC)
+R <- max(rendimiento) - min(rendimiento)
+IC <- ceiling(R / k)
+R; IC
+
+# ------------------------------------------------------------
+# 4. Definición del intervalo de clase
+
+limites <- seq(from = min(rendimiento),
+               to = max(rendimiento) + IC,
+               by = IC)
+
+intervalos <- cut(rendimiento, breaks = limites, include.lowest = TRUE, right = FALSE)
+
+# ------------------------------------------------------------
+# 5. Calcular frecuencias
+f_abs <- as.numeric(table(intervalos))              # Frecuencia absoluta
+f_acum <- cumsum(f_abs)                             # Frecuencia acumulada
+f_rel <- round(f_abs / n, 3)                        # Frecuencia relativa
+f_acum_rel <- round(cumsum(f_rel), 3)               # Frecuencia acumulada relativa
+
+# ------------------------------------------------------------
+# 6. Calcular marcas de clase (punto medio)
+lim_inf <- limites[-length(limites)]
+lim_sup <- limites[-1]
+marca <- (lim_inf + lim_sup) / 2
+
+# ------------------------------------------------------------
+# 7. Productos x·f y x²·f
+xf <- round(marca * f_abs, 2)
+x2f <- round((marca^2) * f_abs, 2)
+
+# ------------------------------------------------------------
+# 8. Crear tabla final de distribución de frecuencias
+tabla <- data.frame(
+  Clase = 1:(length(f_abs)),
+  Intervalo = paste(lim_inf, "-", lim_sup),
+  Limite_inferior = lim_inf,
+  Limite_superior = lim_sup,
+  Marca_clase = marca,
+  Frecuencia = f_abs,
+  Frecuencia_acumulada = f_acum,
+  Frecuencia_relativa = f_rel,
+  Frecuencia_acumulada_relativa = f_acum_rel,
+  x_por_f = xf,
+  x2_por_f = x2f
+)
+
+# Mostrar tabla
+tabla
+View(tabla)
+
