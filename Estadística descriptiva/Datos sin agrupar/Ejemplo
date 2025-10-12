@@ -1,1 +1,107 @@
+datos<- read_excel("Estadística descriptiva.xlsx", sheet = 1) 
+view(datos)
+length(datos)
+str(datos)
+head(datos)
+tail(datos)
+attach(datos)
+names(datos)
+#Estadística descriptiva para datos sin agrupar---------------------------------------------------------------------------------------------------
+
+#Medidas de tendencia central y dispersión
+
+# Cálculos
+media <- mean(diametro_tallo_m)
+mediana <- median(diametro_tallo_m)
+desviacion <- sd(diametro_tallo_m)
+varianza <- var(diametro_tallo_m)
+coef_var <- (sd(diametro_tallo_m) / mean(diametro_tallo_m)) * 100
+minimo <- min(diametro_tallo_m)
+maximo <- max(diametro_tallo_m)
+rango <- maximo - minimo
+iqr <- IQR(diametro_tallo_m)                        # Rango intercuartílico
+cuantiles <- quantile(diametro_tallo_m, probs = seq(0, 1, 0.25))  # Cuartiles
+percentiles <- quantile(diametro_tallo_m, probs = seq(0, 1, 0.10)) # Cada 10%
+outliers<- boxplot(datos$diametro_tallo_m, plot = FALSE)$out #para saber qué dato es el atípico
+Q1<- quantile(datos$diametro_tallo_m, 0.25, na.rm = TRUE)
+Q3<- quantile(datos$diametro_tallo_m, 0.75, na.rm = T )
+IQR<- Q3-Q1
+LS<- Q3+1.5*IQR
+LI<- Q1-1.5*IQR
+NA_count <- sum(is.na(datos$diametro_tallo_m))
+
+
+# Crear un cuadro resumen
+resumen <- data.frame(
+  Medida = c("Media", "Mediana", "Desviación estándar", "Varianza", "Coeficiente de variación (%)", 
+             "Mínimo", "Máximo", "Rango", "Rango intercuartílico (IQR)",
+             "1er Cuartil (Q1)", "2do Cuartil (Mediana)", "3er Cuartil (Q3)",
+             "Percentil 10", "Percentil 90", "Limite superior", "Limite inferior"),
+  Valor = c(
+    media, mediana, desviacion, varianza, coef_var,
+    minimo, maximo, rango, iqr,
+    cuantiles[2], cuantiles[3], cuantiles[4],
+    percentiles[2], percentiles[10], LS, LI
+  )
+) 
+
+view(resumen)
+
+#######################--Forma rápida (función basiStats)--#####################
+names(datos)
+descriptiva<- round(basicStats(datos$Humedad_pocentaje, ci = 0.95), 2)
+print(descriptiva)
+
+###################--Análisis gráfico--##########################################
+
+
+# Box-plot
+boxplot(datos$diametro_tallo_m,
+        main = "Diagramas de caja de las variables",
+        col = "lightblue")
+
+
+boxplot(datos$diametro_tallo_m ~ datos$Estacion,
+        xlab = "Estación", ylab = "Diametro (m)", col = "red")
+
+
+# Gráfico de barras
+medias <- tapply(datos$diametro_tallo_m, datos$Estacion, mean, na.rm = TRUE)
+barplot(medias,
+        main = "Media del diámetro del tallo por estación",
+        xlab = "Estación",
+        ylab = "Diámetro promedio (m)",
+        col = "lightgreen",
+        border = "darkgreen")
+
+
+
+# Gráfico debarras con líneas
+barplot(medias,
+        main = "Media del diámetro del tallo por estación",
+        xlab = "Estación",
+        ylab = "Diámetro promedio (m)",
+        col = "skyblue",
+        border = "darkblue")
+lines(x = 1:length(medias), y = medias, type = "b", pch = 19, col = "red")
+
+
+
+# Gráfico de dispersión
+plot(datos$diametro_tallo_m, datos$Humedad_pocentaje,
+     main = "Relación entre diámetro y humedad",
+     xlab = "Diámetro del tallo (m)",
+     ylab = "Humedad (%)",
+     pch = 19, col = "blue")
+
+
+
+# Gráfico de pastel
+etiquetas <- paste(names(medias), "\n", round(medias, 2))
+
+pie(medias,
+    labels = etiquetas,
+    col = rainbow(length(medias)),
+    main = "Media del diámetro del tallo por estación",
+    border = "white")
 
