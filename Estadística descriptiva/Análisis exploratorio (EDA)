@@ -1,0 +1,169 @@
+# Lista de paquetes requeridos
+paquetes <- c(
+  "openxlsx", "fBasics", "psych", "modeest", "ggrepel", "GGally", 
+  "mice", "corrplot", "readxl", "doebioresearch", "performance", "dplyr", 
+  "ScottKnott", "agricolae", "car", "broom", "data.table", "emmeans", 
+  "ggplot2", "tidyverse", "lattice", "nlme", "lme4", "lmerTest", "multcomp", 
+  "rstatix", "ggpubr", "see", "MASS", "lsmeans", "scales", "lmtest", "multcompView", 
+  "googlesheets4", "googledrive", "clipr", "FactoMineR", "factoextra", 
+  "glmmTMB", "DHARMa", "MuMIn", "hnp", "effects", "sjstats", "ExpDes", "sf", "tmap", "terra",
+  "RVAideMemoire", "RColorBrewer", "DiagrammeR", "janitor", "missForest")
+
+# Verifica cuáles no están instalados
+no_instalados <- paquetes[!(paquetes %in% installed.packages()[,"Package"])];no_instalados
+
+# Instala los que faltan
+if(length(no_instalados)) {
+  install.packages(no_instalados)
+} else {
+  message("Todos los paquetes ya están instalados.")
+}
+
+# Carga todos los paquetes (opcional)
+lapply(paquetes, library, character.only = TRUE)
+#################################################################################################
+
+datos<- read_excel("EDA.xlsx", sheet = 1)
+view(datos)
+
+
+
+##############################################################
+#          ANÁLISIS EXPLORATORIO DE DATOS (EDA)
+#               Ejemplo aplicado en Agronomía
+##############################################################
+
+# Cargar librerías necesarias
+library(readxl)
+library(dplyr)
+library(janitor)
+library(ggplot2)
+library(tidyr)
+
+##############################################################
+#  IMPORTAR Y EXPLORAR LOS DATOS
+##############################################################
+
+datos <- read_excel("EDA.xlsx", sheet = 1)
+View(datos)
+
+# Estructura inicial
+str(datos)
+colnames(datos)
+head(datos)
+tail(datos)
+
+##############################################################
+# LIMPIEZA Y CONVERSIÓN DE VARIABLES
+##############################################################
+
+# Limpiar nombres de columnas
+datos <- clean_names(datos)
+names(datos)
+
+# Convertir variables numéricas
+numericas <- c("altura", "diametro")
+datos[numericas] <- lapply(datos[numericas], as.numeric)
+
+# Convertir variables categóricas
+datos$tratamiento <- as.factor(datos$tratamiento)
+
+# Verificación de clases de variables
+sapply(datos, class)
+
+##############################################################
+# REVISIÓN DE DATOS FALTANTES
+##############################################################
+
+# Conteo de valores faltantes por columna
+colSums(is.na(datos))
+
+# ---- Imputación simple ----
+# Reemplazar los NA con la media o mediana según corresponda
+
+# Imputación por media
+datos$altura[is.na(datos$altura)] <- mean(datos$altura, na.rm = TRUE)
+
+# Imputación por mediana
+datos$diametro[is.na(datos$diametro)] <- median(datos$diametro, na.rm = TRUE)
+
+# Verificar nuevamente
+colSums(is.na(datos[numericas]))
+
+##############################################################
+#  DETECCIÓN Y MANEJO DE OUTLIERS
+##############################################################
+
+# Función para detectar valores atípicos con el método del IQR
+detectar_outliers <- function(x) {
+  Q1 <- quantile(x, 0.25, na.rm = TRUE)
+  Q3 <- quantile(x, 0.75, na.rm = TRUE)
+  IQR <- Q3 - Q1
+  which(x < (Q1 - 1.5*IQR) | x > (Q3 + 1.5*IQR))
+}
+
+# Aplicar la función a las variables numéricas
+outliers_lista <- lapply(datos[numericas], detectar_outliers)
+outliers_lista
+
+# Identificar filas con outliers
+filas_outliers <- unique(unlist(outliers_lista))
+length(filas_outliers)
+
+# Crear nuevo conjunto de datos sin outliers
+datos_limpios <- datos[-filas_outliers, ]
+
+##############################################################
+#  ANÁLISIS GRÁFICO EXPLORATORIO
+##############################################################
+
+## --- Boxplots ---
+boxplot(datos$diametro ~ datos$tratamiento,
+        xlab = "Tratamientos",
+        ylab = "Diámetro (cm)",
+        col = "lightblue",
+        main = "Diagrama de caja del diámetro por tratamiento")
+
+## --- Histograma ---
+hist(datos$diametro,
+     main = "Distribución del diámetro del tallo",
+     xlab = "Diámetro (cm)",
+     col = "lightgreen", border = "white")
+
+## --- Gráfico de densidad ---
+plot(density(datos$diametro, na.rm = TRUE),
+     main = "Densidad del diámetro del tallo",
+     xlab = "Diámetro (cm)",
+     col = "blue", lwd = 2)
+
+## --- Gráfico de dispersión ---
+plot(datos$diametro, datos$altura,
+     main = "Relación entre diámetro y altura",
+     xlab = "Diámetro (cm)",
+     ylab = "Altura (cm)",
+     col = "darkorange", pch = 19)
+
+## --- Gráfico de barras (media por tratamiento) ---
+medias <- tapply(datos$diametro, datos$tratamiento, mean, na.rm = TRUE)
+barplot(medias,
+        col = "skyblue",
+        main = "Media del diámetro por tratamiento",
+        xlab = "Tratamiento",
+        ylab = "Diámetro promedio (cm)")
+
+## --- Gráfico de pastel ---
+etiquetas <- paste(names(medias), "\n", round(medias, 2))
+pie(medias, labels = etiquetas,
+    col = rainbow(length(medias)),
+    main = "Proporción del diámetro promedio por tratamiento",
+    border = "white")
+
+##############################################################
+# REVISIÓN FINAL Y RESUMEN ESTADÍSTICO
+##############################################################
+
+# Resumen numérico básico
+summary(datos[numericas])
+
+# Ver niveles de factores
+lapply(datos[c("tratamiento")], levels)
