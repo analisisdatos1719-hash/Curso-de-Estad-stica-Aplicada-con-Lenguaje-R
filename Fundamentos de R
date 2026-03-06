@@ -386,12 +386,394 @@ datos1[c(1, 5, 10), ] # Filtrar por filas específicas
 install.packages("dplyr")
 library(dplyr)
 
+
+datos1[datos1$Tratamiento == "Madurez Natural", ]
+
 datos1 %>% 
-  filter(Tratamiento == "Madurez Natural")
+  filter(Tratamiento == "Madurez Natural") # equivalente
 
 
-as.data.frame(datos_MN<- datos1)
-View(datos_MN)
 
 
+datos1[!datos1$Tratamiento == "Madurez Natural", ] # excluir
+
+datos1 %>%
+  filter(Tratamiento != "Madurez Natural")
+
+
+
+
+# Filtrar por varias filas
+
+datos1[datos1$Tratamiento %in% c("Madurez Natural", 
+                                 "Ethephon 48 SL",
+                                 "Ethephon 48 SL + Ferteco"), ]
+
+datos1 %>% 
+  filter(Tratamiento %in% c("Madurez Natural",
+                            "Ethephon 48 SL",
+                            "Ethephon 48 SL + Ferteco"))
+
+
+
+#Filtrar por filas y columnas
+
+datos1[datos1$Tratamiento == "Madurez Natural",
+       c("Replica", "TCH", "Rendimiento", "Tratamiento")]
+
+
+datos1 %>% 
+  filter(Tratamiento == "Madurez Natural") %>% 
+  select(Replica, TCH, Rendimiento, Tratamiento)
+
+
+
+
+datos1 %>% 
+  filter(Tratamiento %in% c("Madurez Natural",
+                            "Ethephon 48 SL",
+                            "Ethephon 48 SL + Ferteco")) %>%
+  select(Replica, TCH, Rendimiento, Tratamiento)
+
+
+
+
+# Filtrar solo columnas
+datos1 %>% 
+  select(Replica, TCH, Rendimiento)
+
+
+
+####################################################################
+
+# Estadística descriptiva
+
+
+install.packages("modeest")
+install.packages("psych")
+library(openxlsx)
+library(fBasics)
+library(psych)
+library(modeest)
+library(tribble)
+library(ggrepel)
+library(GGally)
+library(mice) #para realizar imputación múltiple
+library(corrplot)
+library(readxl)
+library(doebioresearch)
+library(performance)
+library(dplyr)
+library(ScottKnott)
+library(agricolae)
+library(car)
+library(broom)
+library(data.table)        
+library(emmeans)
+library(ggplot2)
+library(tidyverse)
+library(lattice)
+library(nlme)
+library(lme4)
+library(lmerTest)
+library(multcomp)
+library(rstatix)
+library(ggpubr)
+library(see)
+library(MASS)
+library(lsmeans)
+library(scales)
+
+datos<- read_excel("Broca_ADC (1).xlsx", sheet = 2)
+attach(datos)
+str(datos)
+
+ED1<- round(basicStats(Precipitación, ci = 0.95), 2)
+print(ED1)
+
+media<- mean(Precipitación)
+print(media)
+mediana<- median(Precipitación)
+moda<- mlv(Precipitación, method = "mfv")
+print(moda)
+moda1<- NA
+n<- length(Precipitación)
+DE<- sd(Precipitación)
+varianza<- var(Precipitación)
+CV<- (DE/media)*100
+EE<- DE/sqrt(n)
+quantile(Precipitación)
+summary(Precipitación)
+Q1<- quantile(Precipitación, 0.25)
+Q2<- quantile(Precipitación, 0.5)
+Q3<- quantile(Precipitación, 0.75)
+quantiles<- quantile(Precipitación, c(0.1, 0.25, 0.5, 0.75))
+print(quantiles)
+
+as<- skewness(Precipitación)
+kurtosis<- kurtosis(Precipitación)
+sw<- shapiro.test(Precipitación)
+print(sw)
+
+MG<- geometric.mean(Precipitación)
+geometric<- function(Precipitación) exp(sum(log(Precipitación))/n)
+geometric(Precipitación)
+
+p<- Temperatura/sum(Temperatura)
+MP<- weighted.mean(Precipitación, p)
+
+MC<- sqrt(mean((Precipitación)^2))
+MA<- 1/mean(1/Precipitación)
+
+
+################################# Con dplyr
+
+# Instalar si no lo tienes
+install.packages("dplyr")
+install.packages("readxl")
+install.packages("fBasics")
+
+# Cargar librerías
+library(dplyr)
+library(readxl)
+library(fBasics)
+
+# Leer datos
+datos <- read_excel("Broca_ADC (1).xlsx", sheet = 2)
+
+# Ver estructura
+str(datos)
+
+# Calcular estadísticas descriptivas por Tratamiento
+resumen_trat <- datos %>% 
+  group_by(Tratamiento) %>% 
+  summarise(
+    n = n(),
+    media = round(mean(Precipitación, na.rm = TRUE), 2),
+    mediana = round(median(Precipitación, na.rm = TRUE), 2),
+    minimo = round(min(Precipitación, na.rm = TRUE), 2),
+    maximo = round(max(Precipitación, na.rm = TRUE), 2),
+    rango = round(max(Precipitación, na.rm = TRUE) - 
+                    min(Precipitación, na.rm = TRUE), 2),
+    DE = round(sd(Precipitación, na.rm = TRUE), 2),
+    varianza = round(var(Precipitación, na.rm = TRUE), 2),
+    CV = round((sd(Precipitación, na.rm = TRUE) / 
+                  mean(Precipitación, na.rm = TRUE)) * 100, 2),
+    EE = round(sd(Precipitación, na.rm = TRUE) / sqrt(n()), 2),
+    Q1 = round(quantile(Precipitación, 0.25, na.rm = TRUE), 2),
+    Q2 = round(quantile(Precipitación, 0.50, na.rm = TRUE), 2),
+    Q3 = round(quantile(Precipitación, 0.75, na.rm = TRUE), 2),
+    asimetria = round(skewness(Precipitación, na.rm = TRUE), 2),
+    curtosis = round(kurtosis(Precipitación, na.rm = TRUE), 2),
+    p_shapiro = round(shapiro.test(Precipitación)$p.value, 4)
+  )
+
+# Mostrar resultados
+print(resumen_trat)
+
+####################### basiStats con filtros
+
+library(fBasics)
+library(dplyr)
+
+# Dividir la variable por Tratamiento
+lista_trat <- split(datos$Precipitación, datos$Tratamiento)
+
+# Aplicar basicStats a cada grupo
+resultados <- lapply(lista_trat, basicStats)
+
+resultados
+
+
+
+
+
+library(dplyr)
+library(fBasics)
+
+resultados <- datos %>%
+  group_by(Tratamiento) %>%
+  group_map(~ basicStats(.x$Precipitación))
+
+resultados
+
+################################ Gráficos
+
+hist(datos$Precipitación,
+     main = "Histograma de Precipitación",
+     xlab = "Precipitación",
+     ylab = "Frecuencia",
+     col = "lightblue")
+
+
+ggplot(datos, aes(x = Precipitación)) +
+  geom_histogram(fill = "lightblue", color = "black") +
+  labs(title = "Histograma de Precipitación",
+       x = "Precipitación",
+       y = "Frecuencia")
+
+
+
+boxplot(datos$Precipitación,
+        main = "Boxplot de Precipitación",
+        ylab = "Precipitación",
+        col = "lightgreen")
+
+
+
+ggplot(datos, aes(y = Precipitación)) +
+  geom_boxplot(fill = "lightgreen") +
+  labs(title = "Boxplot de Precipitación",
+       y = "Precipitación")
+
+
+
+
+boxplot(Precipitación ~ Tratamiento,
+        data = datos,
+        main = "Precipitación por Tratamiento",
+        xlab = "Tratamiento",
+        ylab = "Precipitación",
+        col = "orange")
+
+
+ggplot(datos, aes(x = Tratamiento,
+                  y = Precipitación)) +
+  geom_boxplot(fill = "orange") +
+  labs(title = "Precipitación por Tratamiento",
+       x = "Tratamiento",
+       y = "Precipitación")
+
+
+
+
+
+medias <- tapply(datos$Precipitación,
+                 datos$Tratamiento,
+                 mean)
+
+barplot(medias,
+        main = "Media de Precipitación por Tratamiento",
+        ylab = "Media",
+        col = "skyblue")
+
+
+ggplot(datos, aes(x = Tratamiento,
+                  y = Precipitación)) +
+  stat_summary(fun = mean,
+               geom = "bar",
+               fill = "skyblue") +
+  labs(title = "Media por Tratamiento",
+       y = "Media")
+
+
+###########################################################################################################
+
+
+datos<- read_clip_tbl()
+head(datos)
+View(datos)
+
+
+names(datos)[names(datos)  == "Tolete_dañado"]<- "TD"
+names(datos)
+
+
+datos$Finca
+
+datos$Finca[datos$Finca == "LAS MOJARRAS"]<- "Mojarras"
+
+head(datos)
+
+datos$Distanciamiento[datos$Distanciamiento == "1.75"]<- "2"
+head(datos)
+datos$Distanciamiento
+
+
+############## Pegar datos desde Excel
+
+datos$Hoja<- scan("clipboard")
+head(datos)
+
+datos$Cepa<- read.table("clipboard", header = TRUE)[, 1]
+head(datos)
+
+
+nrow(datos)
+length(datos)
+ncol(datos)
+
+datos$Correlativo_i<- c(1:205)
+head(datos)
+
+tail(datos)
+
+datos$TD[202:205]<- c("NA", "NA", "NA", "NA")
+tail(datos)
+
+
+
+datos$TD[202:205]<- scan("clipboard")
+
+tail(datos)
+
+
+#############################################
+
+datos$caña_podrida<- scan("clipboard")
+head(datos)
+
+
+names(datos)[names(datos) == "caña_podrida"]<- "kg_podrida"
+head(datos)
+
+
+datos$kg_podrida[1]<- "NA"
+head(datos)
+
+datos$kg_podrida[1]<- 18
+head(datos)
+
+
+
+############ Modificaciones
+
+class(datos$kg_podrida)
+
+datos$kg_podrida<- as.numeric(as.character(datos$kg_podrida))
+class(datos$kg_podrida)
+
+datos$ton_podrida<- datos$kg_podrida/1000
+
+head(datos)
+
+
+# cálculo de relativos
+
+datos$TD[1:205]<- scan("clipboard")
+
+
+
+class(datos$TD)
+
+
+Base<- mean(datos$TD[datos$Variedad == "CG02-163"])
+
+datos$TD_rel_media<- datos$TD/Base
+
+head(datos)
+
+
+
+
+
+
+datos<- datos %>%
+  relocate(Correlativo_i, .before = Region)
+head(datos)
+
+datos<- datos %>%
+  relocate(Correlativo_i, .after = last_col())
+
+head(datos)
 
