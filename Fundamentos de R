@@ -777,3 +777,229 @@ datos<- datos %>%
 
 head(datos)
 
+
+
+####################################### Descriptiva para el curso ######################################
+
+
+####### Estadística descriptiva ####################
+
+
+install.packages("modeest")
+install.packages("psych")
+library(openxlsx)
+library(fBasics)
+library(psych)
+library(modeest)
+library(tribble)
+library(ggrepel)
+library(GGally)
+library(mice) #para realizar imputación múltiple
+library(corrplot)
+library(readxl)
+library(doebioresearch)
+library(performance)
+library(dplyr)
+library(ScottKnott)
+library(agricolae)
+library(car)
+library(broom)
+library(data.table)        
+library(emmeans)
+library(ggplot2)
+library(tidyverse)
+library(lattice)
+library(nlme)
+library(lme4)
+library(lmerTest)
+library(multcomp)
+library(rstatix)
+library(ggpubr)
+library(see)
+library(MASS)
+library(lsmeans)
+library(scales)
+
+library(readxl)
+datos <- read_excel("Estadística_descriptiva.xlsx", 
+                    sheet = "Data")
+View(datos)
+
+attach(datos)
+str(datos)
+summary(datos)
+
+ED1<- round(basicStats(TCH, ci = 0.95), 2)
+print(ED1)
+
+media<- mean(TCH)
+print(media)
+mediana<- median(TCH)
+moda<- mlv(TCH, method = "mfv")
+print(moda)
+moda1<- NA
+n<- length(TCH)
+DE<- sd(TCH)
+varianza<- var(TCH)
+CV<- (DE/media)*100
+EE<- DE/sqrt(n)
+quantile(TCH)
+
+Q1<- quantile(TCH, 0.25)
+Q2<- quantile(TCH, 0.5)
+Q3<- quantile(TCH, 0.75)
+quantiles<- quantile(TCH, c(0.1, 0.25, 0.5, 0.75))
+print(quantiles)
+
+as<- skewness(TCH)
+kurtosis<- kurtosis(TCH)
+sw<- shapiro.test(TCH)
+print(sw)
+
+MG<- geometric.mean(Pureza); MG
+
+
+################################# Con dplyr
+
+# Instalar si no lo tienes
+install.packages("dplyr")
+install.packages("readxl")
+install.packages("fBasics")
+
+# Cargar librerías
+library(dplyr)
+library(readxl)
+library(fBasics)
+
+
+# Ver estructura
+str(datos)
+
+# Calcular estadísticas descriptivas por Tratamiento
+resumen_trat <- datos %>% 
+  group_by(Region) %>% 
+  summarise(
+    n = n(),
+    media = round(mean(TCH, na.rm = TRUE), 2),
+    mediana = round(median(TCH, na.rm = TRUE), 2),
+    minimo = round(min(TCH, na.rm = TRUE), 2),
+    maximo = round(max(TCH, na.rm = TRUE), 2),
+    rango = round(maximo-minimo, 2),
+    DE = round(sd(TCH, na.rm = TRUE), 2),
+    varianza = round(var(TCH, na.rm = TRUE), 2),
+    CV = round((sd(TCH, na.rm = TRUE) / 
+                  mean(TCH, na.rm = TRUE)) * 100, 2),
+    EE = round(sd(TCH, na.rm = TRUE) / sqrt(n()), 2),
+    Q1 = round(quantile(TCH, 0.25, na.rm = TRUE), 2),
+    Q2 = round(quantile(TCH, 0.50, na.rm = TRUE), 2),
+    Q3 = round(quantile(TCH, 0.75, na.rm = TRUE), 2),
+    asimetria = round(skewness(TCH, na.rm = TRUE), 2),
+    curtosis = round(kurtosis(TCH, na.rm = TRUE), 2)
+  )
+resumen_trat
+View(resumen_trat)
+
+# Mostrar resultados
+print(resumen_trat)
+
+####################### basiStats con filtros
+
+library(fBasics)
+library(dplyr)
+colnames(datos)
+
+# Dividir la variable por grupo (tratamiento, finca, lote, region, año, etc)
+lista_trat <- split(datos$TCH, datos$Region)
+
+# Aplicar basicStats a cada grupo
+resultados <- lapply(lista_trat, basicStats)
+
+resultados
+
+
+
+
+
+library(dplyr)
+library(fBasics)
+
+resultados <- datos %>%
+  group_by(Tratamiento) %>%
+  group_map(~ basicStats(.x$Precipitación))
+
+resultados
+
+################################ Gráficos
+
+hist(datos$TCH,
+     main = "Histograma de TCH",
+     xlab = "Precipitación",
+     ylab = "Frecuencia",
+     col = "lightblue")
+
+
+ggplot(datos, aes(x = TCH)) +
+  geom_histogram(fill = "lightblue", color = "black") +
+  labs(title = "Histograma de TCH",
+       x = "Precipitación",
+       y = "Frecuencia")
+
+
+
+boxplot(datos$TCH,
+        main = "Boxplot de TCH",
+        ylab = "Precipitación",
+        col = "grey")
+
+
+
+ggplot(datos, aes(y = TCH)) +
+  geom_boxplot(fill = "lightgreen", color = "red") +
+  labs(title = "Boxplot de Precipitación",
+       y = "Precipitación")
+
+
+
+
+boxplot(TCH ~ Region,
+        data = datos,
+        main = "Precipitación por Tratamiento",
+        xlab = "Tratamiento",
+        ylab = "Precipitación",
+        col = "orange")
+
+
+ggplot(datos, aes(x = Region,
+                  y = TCH)) +
+  geom_boxplot(fill = "orange") +
+  labs(title = "Precipitación por Tratamiento",
+       x = "Tratamiento",
+       y = "Precipitación")
+
+
+
+
+
+medias <- tapply(datos$TCH,
+                 datos$Region,
+                 mean)
+
+barplot(medias,
+        main = "Media de Precipitación por Tratamiento",
+        ylab = "Media",
+        col = "skyblue",
+        las = 2)
+
+
+ggplot(datos, aes(x = Region,
+                  y = TCH)) +
+  stat_summary(fun = mean,
+               geom = "bar",
+               fill = "skyblue") +
+  labs(title = "Media por Tratamiento",
+       y = "Media")
+
+
+
+
+
