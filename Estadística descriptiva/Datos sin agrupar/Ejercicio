@@ -1,1 +1,271 @@
 
+library(readxl)
+datos <- read_excel("c:/users/105216/OneDrive - Pantaleon. S.A/Desktop/RC/Scripts/Curso_Estadística/Estadística_descriptiva.xlsx", 
+                    sheet = "Data")
+View(datos)
+
+
+
+# Instalar si no lo tienes
+install.packages("dplyr")
+install.packages("readxl")
+install.packages("fBasics")
+
+# Cargar librerías
+library(dplyr)
+library(readxl)
+library(fBasics)
+
+
+# Ver estructura
+str(datos)
+
+
+# Calcular estadísticas descriptivas por Tratamiento
+resumen_trat <- datos %>% 
+  group_by(Region) %>% 
+  summarise(
+    n = n(),
+    media = round(mean(TCH, na.rm = TRUE), 2),
+    mediana = round(median(TCH, na.rm = TRUE), 2),
+    minimo = round(min(TCH, na.rm = TRUE), 2),
+    maximo = round(max(TCH, na.rm = TRUE), 2),
+    rango = round(maximo-minimo, 2),
+    DE = round(sd(TCH, na.rm = TRUE), 2),
+    varianza = round(var(TCH, na.rm = TRUE), 2),
+    CV = round((sd(TCH, na.rm = TRUE) / 
+                  mean(TCH, na.rm = TRUE)) * 100, 2),
+    EE = round(sd(TCH, na.rm = TRUE) / sqrt(n()), 2),
+    Q1 = round(quantile(TCH, 0.25, na.rm = TRUE), 2),
+    Q2 = round(quantile(TCH, 0.50, na.rm = TRUE), 2),
+    Q3 = round(quantile(TCH, 0.75, na.rm = TRUE), 2),
+    asimetria = round(skewness(TCH, na.rm = TRUE), 2),
+    curtosis = round(kurtosis(TCH, na.rm = TRUE), 2)
+  )
+resumen_trat
+View(resumen_trat)
+
+# Mostrar resultados
+print(resumen_trat)
+
+####################### basiStats con filtros
+
+library(fBasics)
+library(dplyr)
+colnames(datos)
+
+# Dividir la variable por grupo (tratamiento, finca, lote, region, año, etc)
+lista_trat <- split(datos$TCH, datos$Region)
+
+# Aplicar basicStats a cada grupo
+resultados <- lapply(lista_trat, basicStats)
+
+resultados
+
+
+# Gráficos
+
+names(datos)
+
+# Gráfico de barras con lineas de error (Media + DE)
+
+library(dplyr)
+
+resumen <- datos %>%
+  group_by(Region) %>%
+  summarise(
+    media = mean(TCH, na.rm = TRUE),
+    DE = sd(TCH, na.rm = TRUE),
+    n = n(),
+    SE = DE / sqrt(n)
+  ) %>%
+  mutate( IC_inf = media - 1.96 * SE,
+          IC_sup = media + 1.96 * SE
+  )
+
+resumen
+
+library(ggplot2)
+
+ggplot(resumen, aes(x = Region, y = media)) +
+  geom_col(fill = "skyblue") +
+  geom_errorbar(aes(ymin = media - DE, ymax = media + DE), width = 0.2) +
+  labs(title = "TCH por región (Media ± DE)",
+       x = "Región", y = "TCH") +
+  theme_minimal()
+
+# Media + SE
+
+
+ggplot(resumen, aes(x = Region, y = media)) +
+  geom_col(fill = "lightgreen") +
+  geom_errorbar(aes(ymin = media - SE, ymax = media + SE), width = 0.2) +
+  labs(title = "TCH por región (Media ± SE)",
+       x = "Región", y = "TCH") +
+  theme_minimal()
+
+# Media + IC
+
+resumen <- resumen %>%
+  mutate(
+    IC_inf = media - 1.96 * SE,
+    IC_sup = media + 1.96 * SE
+  )
+
+ggplot(resumen, aes(x = Region, y = media)) +
+  geom_col(fill = "salmon") +
+  geom_errorbar(aes(ymin = IC_inf, ymax = IC_sup), width = 0.2) +
+  labs(title = "TCH por región (Media ± IC 95%)",
+       x = "Región", y = "TCH") +
+  theme_minimal()
+
+
+
+# Barras compuestas
+
+resumen2 <- datos %>%
+  group_by(Region, Zafra) %>%
+  summarise(media = mean(TCH, na.rm = TRUE))
+
+
+ggplot(resumen2, aes(x = Region, y = media, fill = Zafra)) +
+  geom_col(position = "stack") +                      # dodge y stack: apiladas
+  labs(title = "TCH por región y zafra",
+       x = "Región", y = "TCH",
+       fill = "Zafra") +
+  theme_minimal()
+
+
+
+# Gráficos de lineas de error
+
+library(dplyr)
+
+resumen <- datos %>%
+  group_by(Region) %>%
+  summarise(
+    media = mean(TCH, na.rm = TRUE),
+    DE = sd(TCH, na.rm = TRUE),
+    n = n(),
+    SE = DE / sqrt(n)
+  ) %>%
+  mutate(
+    IC_inf = media - 1.96 * SE,
+    IC_sup = media + 1.96 * SE
+  )
+
+# Lineas de error verticales
+# Con DE
+
+library(ggplot2)
+
+ggplot(resumen, aes(x = Region, y = media)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = media - DE, ymax = media + DE), width = 0.2) +
+  labs(title = "TCH por región (± DE)",
+       x = "Región", y = "TCH") +
+  theme_minimal()
+
+
+# Con SE
+
+ggplot(resumen, aes(x = Region, y = media)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = media - SE, ymax = media + SE), width = 0.2) +
+  labs(title = "TCH por región (± SE)",
+       x = "Región", y = "TCH") +
+  theme_minimal()
+
+
+# Con IC 95%
+
+ggplot(resumen, aes(x = Region, y = media)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = IC_inf, ymax = IC_sup), width = 0.2) +
+  labs(title = "TCH por región (IC 95%)",
+       x = "Región", y = "TCH") +
+  theme_minimal()
+
+
+## Horizontales
+
+ggplot(resumen, aes(y = Region, x = media)) +
+  geom_point(size = 3) +
+  geom_errorbarh(aes(xmin = media - DE, xmax = media + DE), height = 0.2) +
+  labs(title = "TCH por región (± DE)",
+       x = "TCH", y = "Región") +
+  theme_minimal()
+
+
+ggplot(resumen, aes(y = Region, x = media)) +
+  geom_point(size = 3) +
+  geom_errorbarh(aes(xmin = media - SE, xmax = media + SE), height = 0.2) +
+  labs(title = "TCH por región (± SE)",
+       x = "TCH", y = "Región") +
+  theme_minimal()
+
+
+ggplot(resumen, aes(y = Region, x = media)) +
+  geom_point(size = 3) +
+  geom_errorbarh(aes(xmin = IC_inf, xmax = IC_sup), height = 0.2) +
+  labs(title = "TCH por región (IC 95%)",
+       x = "TCH", y = "Región") +
+  theme_minimal()
+
+
+##### Gráfico de puntos
+
+library(ggplot2)
+
+ggplot(datos, aes(x = Region, y = TCH)) +
+  geom_point(size = 2, color = "blue", alpha = 0.7) +
+  labs(title = "TCH por región (datos individuales)",
+       x = "Región", y = "TCH") +
+  theme_minimal()
+
+
+
+ggplot(datos, aes(x = Region, y = TCH)) +
+  geom_jitter(width = 0.2, size = 2, color = "darkgreen", alpha = 0.7) +
+  labs(title = "TCH por región (con dispersión)",
+       x = "Región", y = "TCH") +
+  theme_minimal()
+
+
+
+
+# Gráfico de lineas
+
+library(dplyr)
+
+resumen <- datos %>%
+  group_by(Region) %>%
+  summarise(media = mean(TCH, na.rm = TRUE))
+
+library(ggplot2)
+
+ggplot(resumen, aes(x = Region, y = media, group = 1)) +
+  geom_line(color = "blue", linewidth = 1) +
+  geom_point(size = 3, color = "red") +
+  labs(title = "TCH promedio por región",
+       x = "Región", y = "TCH") +
+  theme_minimal()
+
+
+# Mapa de calor
+
+library(dplyr)
+
+resumen <- datos %>%
+  group_by(Region) %>%
+  summarise(media = mean(TCH, na.rm = TRUE))
+
+
+library(ggplot2)
+
+ggplot(resumen, aes(x = 1, y = Region, fill = media)) +
+  geom_tile() +
+  labs(title = "Mapa de calor de TCH por región",
+       x = "", y = "Región",
+       fill = "TCH") +
+  theme_minimal()
