@@ -1,0 +1,72 @@
+#### INTERVALOS DE CONFIANZA
+
+
+library(clipr)
+library(dplyr)
+library(ggplot2)
+
+datos<- read_clip_tbl()
+attach(datos)
+View(datos)
+
+
+# 1. PARÁMETROS DE CONFIANZA
+confianza <- 0.96
+significancia<- 0.04
+cola_izq<- significancia/2
+cola_der<- 1 - cola_izq
+prob_acumulada <- cola_izq+  confianza 
+print(prob_acumulada)
+
+# IC agrupado por tratamientos
+colnames(datos)
+
+
+
+tabla_regiones <- datos %>%
+  group_by(Tratamientos) %>%
+  summarise(
+    n = n(),
+    promedio = mean(TCH, na.rm = TRUE),
+    desv_est = sd(TCH, na.rm = TRUE)
+  ) %>%
+  
+  mutate(
+    error_est = desv_est / sqrt(n)
+  ) %>%
+  
+  mutate(
+    valor_critico = if_else(n >= 30, 
+                            qnorm(prob_acumulada),           # Distribución Z
+                            qt(prob_acumulada, df = n - 1)), # Distribución t
+    metodo = if_else(n >= 30, "Normal (Z)", "Student (t)")
+  ) %>%
+  
+  mutate(
+    lim_inf = promedio - (valor_critico * error_est),
+    lim_sup = promedio + (valor_critico * error_est)
+  )
+
+print(tabla_regiones)
+
+
+# Gráfico de lineas de IC
+ggplot() +
+  
+  geom_jitter(data = datos, aes(x = Tratamientos, y = TCH), 
+              width = 0.2, alpha = 0.3, color = "gray60") +
+  
+  geom_errorbar(data = tabla_regiones, aes(x = Tratamientos, ymin = lim_inf, ymax = lim_sup), 
+                width = 0.2, linewidth = 1, color = "black") +
+  
+  geom_point(data = tabla_regiones, aes(x = Tratamientos, y = promedio), 
+             size = 4, shape = 18, color = "black") +
+  
+  labs(title = "Estimación de Tolete Dañado por Región (IC 96%)",
+       subtitle = "Puntos: observaciones individuales | Barras: intervalo de la media",
+       x = "Región Geográfica", 
+       y = "Unidades de TCH") +
+  theme_bw() + 
+  theme(panel.grid.minor = element_blank(),
+        strip.background = element_rect(fill = "white"))
+
